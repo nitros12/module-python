@@ -8,10 +8,10 @@ messages = 0
 token = 0
 
 server = "http://analyticord.solutions"
-def init(token):
+def init(tokenB):
     global token
-    token = token
-    r = requests.get(server + "/api/botLogin",  headers={'Authorization': 'bot ' + token})
+    token = tokenB
+    r = requests.get(server + "/api/botLogin",  headers={'Authorization': 'bot ' + str(token)})
     data = r.json()
     if data.get('error'):
         print("[AC] Login failed. Your bot will continue to start, but not send data to Analyticord.")
