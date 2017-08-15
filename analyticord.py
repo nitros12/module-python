@@ -7,7 +7,7 @@ verifiedMessages = True
 messages = 0
 token = 0
 
-server = "http://analyticord.solutions"
+server = "https://analyticord.solutions"
 def init(tokenB):
     global token
     token = tokenB
