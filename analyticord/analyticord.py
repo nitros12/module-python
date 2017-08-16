@@ -52,7 +52,7 @@ class AnalytiCord:
     def user_auth(self):
         if not hasattr(self, "user_token"):
             raise Exception("user_token must be set to use this feature.")
-        return {"Authorization" self.user_token}
+        return {"Authorization": self.user_token}
 
     async def start(self):
         """Start up analyticord connection.
