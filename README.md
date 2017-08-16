@@ -1,35 +1,35 @@
 # Analyticord-source/module-python/beta
 https://analyticord.solutions/api/version?lib=python
 This module also requires:
->Requests
 
->Threading
+aiohttp
+
 ## Getting started
-To use the Analyticord Python module, download the analyticord.py file, place it in the same directory as your bot and add this line to the top:
+to use analyticord, install this repo with `pip install -U git+https://github.com/analyticord/module-python`
+
+Then use
 ```
 import analyticord
 ```
-Now you've imported the module, you need to login to Analyticord and start logging information, to do this, use this function
+
+To create the analyticord instance.
 ```
-analyticord.init(token)
+analytics = analyticord.AnalytiCord(token)  # where token is your analyticord
+token
 ```
+
+To increment the message count, use:
+```await analytics.increment_messages()```
+
+However it is also possible to use method `analytics.hook_bot(bot)` to hook the
+on_message of a discord.py bot.
+This does not effect other on_message events.
+
+By default the bot creates a loop that sends the message count updates every 60
+seconds. you can disable this by passing `do_message_loop=False` to the
+AnalytiCord constructor
+
 ## Options
-Unlike the NodeJS module, you need to edit analyticord.py to provide options, they are all at the top.
-```
-noMessages (Bool)
-```
-Don't send any non-error messages.
-```
-checkForUpdates (Bool)
-```
-Check for updates at init
-```
-verifiedMessages (Bool)
-```
-Enabling this option will return the verified message after data has been sent, that URL will look like this:
-```
-[AC] Message sent to server, verify it's contents at https://analyticord.solutions/api/verified?id=xxxx-xxxx-xxxx-xxxx
-```
 Copy this into your browser and make sure the data Analyticord recieved is how you intended it to be, if you need help contact us
 https://anlyti.co/discord
 
@@ -37,14 +37,10 @@ https://anlyti.co/discord
 
 To send data like guildJoin, use analyticord.send(), for exmaple
 ```
-analyticord.send('guildJoin', 'verified')
+await analyticord.send('guildJoin', 'verified')
 ```
 This will add a number to the amount of guilds and growth on the Analyticord frontend.
 
-If you would like to log how many messages go through your bot, in your on_message event, add this code:
-```
-analyticord.message()
-```
 Every minute the amount of messsages since the last submission will be sent, please do not send the amount of messages yourself as soon as you recieve them, you will be ratelimited & banned, let our program handle it for you.
 
 You can see a list of eventTypes at https://anlyti.co/eventTypes.
