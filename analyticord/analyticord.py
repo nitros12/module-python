@@ -20,7 +20,7 @@ class ApiError(Exception):
 
 class AnalytiCord:
 
-    base_address = "https://api.analyticord.solutions:5000"
+    base_address = "http://api.analyticord.solutions:5000"
     login_address = base_address + "/api/botLogin"
     send_address = base_address + "/api/submit"
     get_address = base_address + "/api/getData"
