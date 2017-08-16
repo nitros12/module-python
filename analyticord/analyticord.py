@@ -150,7 +150,7 @@ class AnalytiCord:
 
     async def update_messages_now(self):
         async with self.message_lock:
-            resp = await self.send("messages", str(self.message_count))
+            resp = await self.send("messages", self.message_count)
             self.message_count = 0
             return resp
 
