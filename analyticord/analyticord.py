@@ -2,6 +2,7 @@ import asyncio
 import aiohttp
 import logging
 import typing
+import functools
 
 logger = logging.getLogger("analyticord")
 
@@ -19,7 +20,7 @@ class ApiError(Exception):
 
 class AnalytiCord:
 
-    base_address = "https://analyticord.solutions"
+    base_address = "https://api.analyticord.solutions:5000"
     login_address = base_address + "/api/botLogin"
     send_address = base_address + "/api/submit"
     get_address = base_address + "/api/getData"
@@ -28,24 +29,30 @@ class AnalytiCord:
 
     def __init__(self,
                  token: str,
+                 user_token: str=None,
                  message_interval: int=60,
-                 do_message_loop: bool=True,
                  session: aiohttp.ClientSession=None,
                  loop=None):
-        self.token = token
+        self.token = f"bot {token}"
         self.loop = asyncio.get_event_loop() if loop is None else loop
         self.session = aiohttp.ClientSession() if session is None else session
         self.message_interval = message_interval
-        self.do_message_loop = do_message_loop
+
+        if user_token is not None:
+            self.user_token = f"user {user_token}"
 
         self.message_lock = asyncio.Lock()
         self.message_count = 0
 
-        self.loop.create_task(self.start())
-
     @property
     def auth(self):
         return {"Authorization": self.token}
+
+    @property
+    def user_auth(self):
+        if not hasattr(self, "user_token"):
+            raise Exception("user_token must be set to use this feature.")
+        return {"Authorization": self.user_token}
 
     async def start(self):
         """Start up analyticord connection.
@@ -60,8 +67,7 @@ class AnalytiCord:
                 err = await resp.json()
                 raise ApiError(status=resp.status, **err)
 
-        if self.do_message_loop:
-            self.loop.create_task(self.update_messages_loop())
+        self.loop.create_task(self.update_messages_loop())
 
     async def send(self, event_type: str, data: str) -> dict:
         """Send data to analiticord.
@@ -94,7 +100,7 @@ class AnalytiCord:
         async with self.session.get(
                 AnalytiCord.get_address,
                 params=attrs,
-                headers=self.auth) as resp:
+                headers=self.user_auth) as resp:
             body = await resp.json()
             if resp.status != 200:
                 raise ApiError(status=resp.status, **body)
@@ -112,7 +118,7 @@ class AnalytiCord:
         async with self.session.get(
                 AnalytiCord.botinfo_address,
                 params={"id": id},
-                headers=self.auth) as resp:
+                headers=self.user_auth) as resp:
             # this feels copypasta but we're not doing this enough to warrant building something better
             body = await resp.json()
             if resp.status != 200:
@@ -128,7 +134,7 @@ class AnalytiCord:
         """
         async with self.session.get(
                 AnalytiCord.botlist_address,
-                headers=self.auth) as resp:
+                headers=self.user_auth) as resp:
             body = await resp.json()
             if resp.status != 200:
                 raise ApiError(status=resp.status, **body)
@@ -144,8 +150,9 @@ class AnalytiCord:
 
     async def update_messages_now(self):
         async with self.message_lock:
-            await self.send("messages", str(self.message_count))
+            resp = await self.send("messages", str(self.message_count))
             self.message_count = 0
+            return resp
 
     async def update_messages_loop(self):
         while True:

@@ -17,6 +17,11 @@ To create the analyticord instance.
 analytics = analyticord.AnalytiCord(token)  # where token is your analyticord token
 ```
 
+Then start it up with:
+```
+await analytics.start()
+```
+
 To increment the message count, use:
 ```await analytics.increment_messages()```
 
