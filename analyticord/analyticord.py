@@ -1,6 +1,7 @@
 import asyncio
 import aiohttp
 import logging
+import typing
 
 logger = logging.getLogger("analyticord")
 
@@ -22,6 +23,8 @@ class AnalytiCord:
     login_address = base_address + "/api/botLogin"
     send_address = base_address + "/api/submit"
     get_address = base_address + "/api/getData"
+    botinfo_address = base_address + "/api/botinfo"
+    botlist_address = base_address + "/api/botlist"
 
     def __init__(self,
                  token: str,
@@ -60,11 +63,13 @@ class AnalytiCord:
         if self.do_message_loop:
             self.loop.create_task(self.update_messages_loop())
 
-    async def send(self, event_type: str, data: str):
+    async def send(self, event_type: str, data: str) -> dict:
         """Send data to analiticord.
 
         :param event_type: Event type to send.
         :param data: Data to send.
+
+        :return: Dict response from api.
 
         :raises: :class:`analyticord.ApiError` on error.
         """
@@ -72,22 +77,62 @@ class AnalytiCord:
                 AnalytiCord.send_address,
                 data=dict(eventType=event_type, data=data),
                 headers=self.auth) as resp:
+            body = await resp.json()
             if resp.status != 200:
-                err = await resp.json()
-                raise ApiError(status=resp.status, **err)
+                raise ApiError(status=resp.status, **body)
+            return body
 
-    async def get(self, **attrs) -> dict:
+    async def get(self, **attrs) -> list:
         """Get data from the api.
 
         :param attrs: Kwarg attributes passed to get request params.
 
-        :return: Tuple of response code and Dict response from api. (status, dict).
+        :return: Response list on success.
+
+        :raises:  :class:`analyticord.ApiError` on error.
         """
         async with self.session.get(
                 AnalytiCord.get_address,
                 params=attrs,
                 headers=self.auth) as resp:
-            return (resp.status, await resp.json())
+            body = await resp.json()
+            if resp.status != 200:
+                raise ApiError(status=resp.status, **body)
+            return body
+
+    async def bot_info(self, id: int) -> dict:
+        """Get info for a bot id.
+
+        :param id: The ID of the bot to get info for.
+
+        :return: Bot info data.
+
+        :raises: :class:`analyticord.ApiError` on error.
+        """
+        async with self.session.get(
+                AnalytiCord.botinfo_address,
+                params={"id": id},
+                headers=self.auth) as resp:
+            # this feels copypasta but we're not doing this enough to warrant building something better
+            body = await resp.json()
+            if resp.status != 200:
+                raise ApiError(status=resp.status, **body)
+            return body
+
+    async def bot_list(self) -> list:
+        """Get list of bots owned by this auth.
+
+        :return: list of bot info data.
+
+        :raises: :class:`analyticord.ApiError` on error.
+        """
+        async with self.session.get(
+                AnalytiCord.botlist_address,
+                headers=self.auth) as resp:
+            body = await resp.json()
+            if resp.status != 200:
+                raise ApiError(status=resp.status, **body)
+            return body
 
     async def increment_messages(self, *_):
         """Increment the message count.
