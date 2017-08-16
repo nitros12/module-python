@@ -20,12 +20,14 @@ class AnalytiCord:
     def __init__(self,
                  token: str,
                  message_interval: int=60,
+                 do_message_loop: bool=True,
                  session: aiohttp.ClientSession=None,
                  loop=None):
         self.token = token
         self.loop = asyncio.get_event_loop() if loop is None else loop
         self.session = aiohttp.ClientSession() if session is None else session
         self.message_interval = message_interval
+        self.do_message_loop = do_message_loop
 
         self.message_lock = asyncio.Lock()
         self.message_count = 0
@@ -47,6 +49,7 @@ class AnalytiCord:
                 desc = err.get("description")
                 raise ApiError(code=code, desc=desc)
 
+        if self.do_message_loop:
             self.loop.create_task(self.update_messages_loop())
 
     async def send(self, event_type: str, data: str):
