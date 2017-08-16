@@ -14,8 +14,7 @@ import analyticord
 
 To create the analyticord instance.
 ```
-analytics = analyticord.AnalytiCord(token)  # where token is your analyticord
-token
+analytics = analyticord.AnalytiCord(token)  # where token is your analyticord token
 ```
 
 To increment the message count, use:
