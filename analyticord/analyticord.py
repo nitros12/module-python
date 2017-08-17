@@ -54,18 +54,21 @@ class AnalytiCord:
             raise Exception("user_token must be set to use this feature.")
         return {"Authorization": self.user_token}
 
+    async def do_request(self, rtype: str, endpoint: str, auth, **kwargs):
+        req = getattr(self.sessiong, rtype)
+        async with req(endpoint, headers=auth, **kwargs) as resp:
+            body = await resp.json()
+            if resp.status != 200:
+                raise ApiError(status=resp.status, **body)
+            return body
+
     async def start(self):
         """Start up analyticord connection.
         Also runs the message updater loop
 
         :raises: :class:`analyticord.ApiError` on error.
         """
-        async with self.session.get(
-                AnalytiCord.login_address,
-                headers=self.auth) as resp:
-            if resp.status != 200:
-                err = await resp.json()
-                raise ApiError(status=resp.status, **err)
+        await self.do_request("get", AnalytiCord.login_address, self.auth)
 
         self.loop.create_task(self.update_messages_loop())
 
@@ -79,14 +82,8 @@ class AnalytiCord:
 
         :raises: :class:`analyticord.ApiError` on error.
         """
-        async with self.session.post(
-                AnalytiCord.send_address,
-                data=dict(eventType=event_type, data=data),
-                headers=self.auth) as resp:
-            body = await resp.json()
-            if resp.status != 200:
-                raise ApiError(status=resp.status, **body)
-            return body
+        return await self.do_request("post", AnalytiCord.send_address, self.auth,
+                                     data=dict(eventType=event_type, data=data))
 
     async def get(self, **attrs) -> list:
         """Get data from the api.
@@ -97,14 +94,7 @@ class AnalytiCord:
 
         :raises:  :class:`analyticord.ApiError` on error.
         """
-        async with self.session.get(
-                AnalytiCord.get_address,
-                params=attrs,
-                headers=self.user_auth) as resp:
-            body = await resp.json()
-            if resp.status != 200:
-                raise ApiError(status=resp.status, **body)
-            return body
+        return await self.do_request("get", AnalytiCord.get_address, self.user_auth, params=attrs)
 
     async def bot_info(self, id: int) -> dict:
         """Get info for a bot id.
@@ -115,15 +105,8 @@ class AnalytiCord:
 
         :raises: :class:`analyticord.ApiError` on error.
         """
-        async with self.session.get(
-                AnalytiCord.botinfo_address,
-                params={"id": id},
-                headers=self.user_auth) as resp:
-            # this feels copypasta but we're not doing this enough to warrant building something better
-            body = await resp.json()
-            if resp.status != 200:
-                raise ApiError(status=resp.status, **body)
-            return body
+        return await self.do_request("get", AnalytiCord.botinfo_address, self.user_auth,
+                                     params={"id": id})
 
     async def bot_list(self) -> list:
         """Get list of bots owned by this auth.
@@ -132,13 +115,7 @@ class AnalytiCord:
 
         :raises: :class:`analyticord.ApiError` on error.
         """
-        async with self.session.get(
-                AnalytiCord.botlist_address,
-                headers=self.user_auth) as resp:
-            body = await resp.json()
-            if resp.status != 200:
-                raise ApiError(status=resp.status, **body)
-            return body
+        return await self.do_request("get", AnalytiCord.botlist_address, self.user_auth)
 
     async def increment_messages(self, *_):
         """Increment the message count.
