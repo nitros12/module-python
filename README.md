@@ -12,7 +12,7 @@ Then use
 import analyticord
 ```
 
-To create the analyticord instance.
+To create the analyticord instance, the name `analytics` will mean this instance of AnalytiCord used.
 ```
 analytics = analyticord.AnalytiCord(token)  # where token is your analyticord token
 ```
@@ -29,10 +29,6 @@ However it is also possible to use method `analytics.hook_bot(bot)` to hook the
 on_message of a discord.py bot.
 This does not effect other on_message events.
 
-By default the bot creates a loop that sends the message count updates every 60
-seconds. you can disable this by passing `do_message_loop=False` to the
-AnalytiCord constructor
-
 ## Options
 Copy this into your browser and make sure the data Analyticord recieved is how you intended it to be, if you need help contact us
 https://anlyti.co/discord
@@ -41,7 +37,7 @@ https://anlyti.co/discord
 
 To send data like guildJoin, use analyticord.send(), for exmaple
 ```
-await analyticord.send('guildJoin', 'verified')
+await analytics.send('guildJoin', 'verified')
 ```
 This will add a number to the amount of guilds and growth on the Analyticord frontend.
 

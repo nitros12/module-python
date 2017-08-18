@@ -1,8 +1,6 @@
 import asyncio
 import aiohttp
 import logging
-import typing
-import functools
 
 logger = logging.getLogger("analyticord")
 
@@ -55,7 +53,7 @@ class AnalytiCord:
         return {"Authorization": self.user_token}
 
     async def do_request(self, rtype: str, endpoint: str, auth, **kwargs):
-        req = getattr(self.sessiong, rtype)
+        req = getattr(self.session, rtype)
         async with req(endpoint, headers=auth, **kwargs) as resp:
             body = await resp.json()
             if resp.status != 200:
