@@ -11,7 +11,6 @@ class ApiError(Exception):
         """
         self.name = kwargs.pop("name")
         self.desc = kwargs.pop("description")
-        self.id = kwargs.pop("id")
         self.status = kwargs.pop("status")
         self.extra = kwargs
 

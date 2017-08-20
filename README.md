@@ -1,8 +1,7 @@
 # Analyticord-source/module-python/beta
 https://analyticord.solutions/api/version?lib=python
-This module also requires:
 
-aiohttp
+Documentation is available (here)[https://discordanalytics-python.readthedocs.io/en/latest/]
 
 ## Getting started
 to use analyticord, install this repo with `pip install -U git+https://github.com/analyticord/module-python`
