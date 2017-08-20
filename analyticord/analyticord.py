@@ -6,7 +6,7 @@ from analyticord import errors
 
 logger = logging.getLogger("analyticord")
 
-base_address = "https://api.analyticord.solutions"
+base_address = "https://analyticord.solutions"
 login_address = base_address + "/api/botLogin"
 send_address = base_address + "/api/submit"
 get_address = base_address + "/api/getData"
@@ -80,7 +80,7 @@ class AnalytiCord:
             raise Exception("user_token must be set to use this feature.")
         return {"Authorization": self.user_token}
 
-    async def __do_request(self, rtype: str, endpoint: str, auth, **kwargs):
+    async def _do_request(self, rtype: str, endpoint: str, auth, **kwargs):
         req = getattr(self.session, rtype)
         async with req(endpoint, headers=auth, **kwargs) as resp:
             body = await resp.json()
@@ -96,7 +96,7 @@ class AnalytiCord:
         """
         await self._do_request("get", login_address, self._auth)
 
-        self.loop.create_task(self.update_messages_loop())
+        self.loop.create_task(self._update_messages_loop())
 
     async def send(self, event_type: str, data: str) -> dict:
         """Send data to analiticord.
