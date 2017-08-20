@@ -8,11 +8,3 @@ analyticord\.analyticord module
     :members:
     :inherited-members:
     :undoc-members:
-
-analyticord\.errors module
---------------------------
-
-.. automodule:: analyticord.errors
-    :members:
-    :undoc-members:
-

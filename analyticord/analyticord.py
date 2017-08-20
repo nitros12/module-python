@@ -54,7 +54,7 @@ class AnalytiCord:
         """
 
         #: Yout AnalytiCord bot token.
-        self.token = f"bot {token}"
+        self.token = "bot {}".format(token)
 
         self.loop = loop or asyncio.get_event_loop()
         self.session = session or aiohttp.ClientSession()
@@ -63,7 +63,7 @@ class AnalytiCord:
         self.message_interval = message_interval
 
         if user_token is not None:
-            self.user_token = f"user {user_token}"
+            self.user_token = "user {}".format(user_token)
 
         self.message_lock = asyncio.Lock()
 
@@ -92,7 +92,7 @@ class AnalytiCord:
         """Start up analyticord connection.
         Also runs the message updater loop
 
-        :raises: :class:`analyticord.ApiError`.
+        :raises: :class:`analyticord.errors.ApiError`.
         """
         await self._do_request("get", login_address, self._auth)
 
@@ -106,7 +106,7 @@ class AnalytiCord:
 
         :return: Dict response from api.
 
-        :raises: :class:`analyticord.ApiError`.
+        :raises: :class:`analyticord.errors.ApiError`.
         """
         return await self._do_request("post", send_address, self._auth,
                                       data=dict(eventType=event_type, data=data))
@@ -118,7 +118,7 @@ class AnalytiCord:
 
         :return: Response list on success.
 
-        :raises:  :class:`analyticord.ApiError`.
+        :raises:  :class:`analyticord.errors.ApiError`.
         """
         return await self._do_request("get", get_address, self._user_auth, params=attrs)
 
@@ -129,7 +129,7 @@ class AnalytiCord:
 
         :return: Bot info data.
 
-        :raises: :class:`analyticord.ApiError`.
+        :raises: :class:`analyticord.errors.ApiError`.
         """
         return await self._do_request("get", botinfo_address, self._user_auth,
                                       params={"id": id})
@@ -139,7 +139,7 @@ class AnalytiCord:
 
         :return: list of bot info data.
 
-        :raises: :class:`analyticord.ApiError`.
+        :raises: :class:`analyticord.errors.ApiError`.
         """
         return await self._do_request("get", botlist_address, self._user_auth)
 

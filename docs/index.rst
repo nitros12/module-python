@@ -11,6 +11,7 @@ Welcome to analyticord's documentation!
    :caption: Contents:
 
    analyticord
+   errors
 
 
 Indices and tables

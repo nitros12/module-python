@@ -1,18 +1,23 @@
 import sys
 from setuptools import setup, find_packages
 
-if sys.version_info < (3, 6):
-    raise RuntimeError("analyticord requires the latest and greatest version of python (3.6)")
+if sys.version_info < (3, 5):
+    raise RuntimeError("analyticord requires a newer version of python (3.5)")
 
 version = __import__("analyticord").__version__
 
-requirements = []
 with open("requirements.txt") as f:
-    requirements = f.read().splitlines()
+    requirements = f.readlines()
 
 setup(name="analyticord",
       version=version,
       description="Analyticord client for python.",
       url="https://github.com/analyticord/module-python",
       packages=find_packages(),
-      install_requires=requirements)
+      install_requires=requirements,
+      extras_require={
+          "docs": [
+              "sphinx-autodoc-typehints >= 1.2.1",
+              "sphinxcontrib-asyncio"
+          ]
+      })

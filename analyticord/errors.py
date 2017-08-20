@@ -2,21 +2,21 @@
 class ApiError(Exception):
     """Base API error class."""
 
-    def __init__(self, name: str, description: str, id: str, status: int, **extra):
+    def __init__(self, **kwargs):
         """
-        :param name: The name of the error.
-        :param desc: The description of the error.
-        :param status: HTTP status code returned.
-        :param extra: extra params given in the error response.
+        :param str name: The name of the error.
+        :param str desc: The description of the error.
+        :param str status: HTTP status code returned.
+        :param str extra: extra params given in the error response.
         """
-        self.name = name
-        self.desc = description
-        self.id = id
-        self.status = status
-        self.extra = extra
+        self.name = kwargs.pop("name")
+        self.desc = kwargs.pop("description")
+        self.id = kwargs.pop("id")
+        self.status = kwargs.pop("status")
+        self.extra = kwargs
 
     def __str__(self):
-        return f"API Error id({self.id}) {self.name} {self.desc}. (http code: {self.status}) Extra attrs: {self.extra}"
+        return "API Error id({0.id}) {0.name} {0.desc}. (http code: {0.status}) Extra attrs: {0.extra}".format(self)
 
 
 class DataValidationError(ApiError):
