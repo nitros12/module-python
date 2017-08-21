@@ -9,13 +9,15 @@ class ApiError(Exception):
         :param str status: HTTP status code returned.
         :param str extra: extra params given in the error response.
         """
-        self.name = kwargs.pop("name")
+        self.name = kwargs.pop("error")
         self.desc = kwargs.pop("description")
         self.status = kwargs.pop("status")
         self.extra = kwargs
 
     def __str__(self):
-        return "API Error id({0.id}) {0.name} {0.desc}. (http code: {0.status}) Extra attrs: {0.extra}".format(self)
+        return "API Error {0.name}: {0.desc}. (http code: {0.status}) Extra attrs: {0.extra}".format(self)
+
+    __repr__ = __str__
 
 
 class DataValidationError(ApiError):

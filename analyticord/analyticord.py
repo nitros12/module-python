@@ -15,8 +15,8 @@ botlist_address = base_address + "/api/botlist"
 
 
 def _make_error(error, **kwargs) -> errors.ApiError:
-    name = error.get("name", "")  # type: str
-    name = name[:1].lower() + name[1:]
+    name = error.get("error", "")  # type: str
+    name = name[:1].upper() + name[1:]
 
     err = getattr(errors, name, None)
 
