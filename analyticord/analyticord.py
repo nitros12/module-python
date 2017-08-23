@@ -94,9 +94,9 @@ class AnalytiCord:
 
         :raises: :class:`analyticord.errors.ApiError`.
         """
-        await self._do_request("get", login_address, self._auth)
-
+        resp = await self._do_request("get", login_address, self._auth)
         self.loop.create_task(self._update_messages_loop())
+        return resp
 
     async def send(self, event_type: str, data: str) -> dict:
         """Send data to analiticord.
