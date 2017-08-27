@@ -1,6 +1,7 @@
 import asyncio
 import aiohttp
 import logging
+import typing
 
 from analyticord import errors
 
@@ -26,6 +27,48 @@ def _make_error(error, **kwargs) -> errors.ApiError:
     return err(**error, **kwargs)
 
 
+class EventProxy:
+    def __init__(self, analytics, dpy_name: str, anal_name: str):
+        """
+        Proxy class to make events and actions acessible through dot notation
+
+        :param analytics: The :class:`analyticord.AnalytiCord` this proxy is tied to.
+        :param dpy_name: The discord.py name of the event.
+        :param anal_name: The analyticord name of the event.
+        """
+        self.analytics = analytics
+        self.dpy_name = dpy_name
+        self.anal_name = anal_name
+        self.lock = asyncio.Lock()
+        self.counter = 0
+
+    def send(self, count: int):
+        """Invoke this events send message."""
+        return self.analytics.send(self.anal_name, count)
+
+    def hook_bot(self, bot):
+        """Hook the event of a discord.py bot to this event.
+
+        :param bot: An instance of a discord.py :class:`discord.ext.commands.Bot`.
+        """
+        async def _hook(*_, **__):
+            await self.increment()
+
+        bot.add_listener(_hook, self.dpy_name)
+
+    async def increment(self):
+        """Increment this events counter."""
+        async with self.lock:
+            self.counter += 1
+
+    async def update_now(self):
+        "Trigger an update of this event, resetting the counter."
+        async with self.lock:
+            resp = await self.send(self.counter)
+            self.counter = 0
+            return resp
+
+
 class AnalytiCord:
     """Represents an AnalytiCord api object.
 
@@ -38,10 +81,13 @@ class AnalytiCord:
 
     """
 
+    #: Default listeners in format (discord event, analyticord event)
+    default_listens = (("on_message", "messages"),)
+
     def __init__(self,
                  token: str,
                  user_token: str=None,
-                 message_interval: int=60,
+                 event_interval: int=60,
                  session: aiohttp.ClientSession=None,
                  loop=None):
         """
@@ -49,26 +95,29 @@ class AnalytiCord:
         :param user_token:
             Your AnalytiCord user token.
             This is not required unless you wish to use endpoints that require User auth.
-        :param message_interval: The interval between sending message updates in seconds.
+        :param event_interval: The interval between sending event updates in seconds.
 
         """
 
-        #: Yout AnalytiCord bot token.
+        #: Your AnalytiCord bot token.
         self.token = "bot {}".format(token)
 
         self.loop = loop or asyncio.get_event_loop()
         self.session = session or aiohttp.ClientSession()
 
-        #: Interval between sending message count updates in seconds.
-        self.message_interval = message_interval
+        #: Interval between sending event updates
+        self.event_interval = event_interval
 
         if user_token is not None:
             self.user_token = "user {}".format(user_token)
 
-        self.message_lock = asyncio.Lock()
+        self.events = {}
 
-        #: The message counter.
-        self.message_count = 0
+        for d, a in self.default_listens:
+            self.events[a] = EventProxy(self, d, a)
+
+    def __getattr__(self, attr):
+        return self.events[attr]
 
     @property
     def _auth(self):
@@ -80,6 +129,21 @@ class AnalytiCord:
             raise Exception("user_token must be set to use this feature.")
         return {"Authorization": self.user_token}
 
+    def register(self, dpy_name: str, anal_name: str):
+        """Register an event.
+
+        Once registered, AnalytiCord.<anal_name> will return a :class:`analyticord.EventProxy`
+        for the given <anal_name>.
+
+        This allows you to do:
+        await AnalytiCord.event.increment()  # increment the event counter
+        AnalytiCord.event.hook_bot(bot)  # hook the event to a bot
+
+        :param dpy_name: The discord.py event name, for example: on_message, on_guild_join.
+        :param anal_name: The AnalytiCord event name, for example: messages, guildJoin.
+        """
+        self.events[anal_name] = EventProxy(self, dpy_name, anal_name)
+
     async def _do_request(self, rtype: str, endpoint: str, auth, **kwargs):
         req = getattr(self.session, rtype)
         async with req(endpoint, headers=auth, **kwargs) as resp:
@@ -90,12 +154,12 @@ class AnalytiCord:
 
     async def start(self):
         """Start up analyticord connection.
-        Also runs the message updater loop
+        Also runs the event updater loop
 
         :raises: :class:`analyticord.errors.ApiError`.
         """
         resp = await self._do_request("get", login_address, self._auth)
-        self.loop.create_task(self._update_messages_loop())
+        self.loop.create_task(self._update_events_loop())
         return resp
 
     async def send(self, event_type: str, data: str) -> dict:
@@ -143,37 +207,12 @@ class AnalytiCord:
         """
         return await self._do_request("get", botlist_address, self._user_auth)
 
-    async def increment_messages(self):
-        """Increment the message count.
-
-        Asynchronous because we wait for a lock on incrementing the message count.
-        """
-        async with self.message_lock:
-            self.message_count += 1
-
-    async def update_messages_now(self):
-        """Trigger sending of a message update event, also resets the counter."""
-        async with self.message_lock:
-            resp = await self.send("messages", self.message_count)
-            self.message_count = 0
-            return resp
-
-    async def _update_messages_loop(self):
+    async def _update_events_loop(self):
         while True:
-            await asyncio.sleep(self.message_interval)
-            if self.message_count:
-                try:
-                    await self.update_messages_now()
-                except errors.ApiError as e:
-                    logger.error(str(e))
-
-    def hook_bot(self, bot):
-        """Hook the on_message events of a discord.py bot.
-        Such that receiveing messages increments the counter.
-
-        :param bot: An instance of a discord.py :class:`discord.ext.commands.Bot`.
-        """
-        async def _hook(message):
-            await self.increment_messages()
-
-        bot.add_listener(_hook, "on_message")
+            await asyncio.sleep(self.event_interval)
+            for event in self.events.values():
+                if event.counter:
+                    try:
+                        await event.update_now()
+                    except errors.ApiError as e:
+                        logger.error(str(e))

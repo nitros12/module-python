@@ -22,11 +22,11 @@ await analytics.start()
 ```
 
 To increment the message count, use:
-```await analytics.increment_messages()```
+```await analytics.messages.increment()```
 
-However it is also possible to use method `analytics.hook_bot(bot)` to hook the
-on_message of a discord.py bot.
-This does not effect other on_message events.
+However it is also possible to use method `analytics.messages.hook_bot(bot)` to hook the
+relevent event of a discord.py bot.
+This does not effect events already on the bot, for example: registering messages will not break any current on_message events on the bot.
 
 ## Options
 Copy this into your browser and make sure the data Analyticord recieved is how you intended it to be, if you need help contact us
