@@ -22,7 +22,7 @@ await analytics.start()
 ```
 
 To increment the message count, use:
-```await analytics.increment_messages()```
+```await analytics.messages.increment()```
 
 However it is also possible to use method `analytics.hook_bot(bot)` to hook the
 on_message of a discord.py bot.
