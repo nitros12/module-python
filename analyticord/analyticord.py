@@ -111,7 +111,7 @@ class AnalytiCord:
         if user_token is not None:
             self.user_token = "user {}".format(user_token)
 
-        self.events: typing.Dict[str, EventProxy] = {}
+        self.events = {}
 
         for d, a in self.default_listens:
             self.events[a] = EventProxy(self, d, a)
