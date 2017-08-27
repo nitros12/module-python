@@ -28,11 +28,11 @@ def _make_error(error, **kwargs) -> errors.ApiError:
 
 
 class EventProxy:
-    def __init__(self, analytics: 'Analyticord', dpy_name: str, anal_name: str):
+    def __init__(self, analytics: 'analyticord.AnalytiCord', dpy_name: str, anal_name: str):
         """
         Proxy class to make events and actions acessible through dot notation
 
-        :param analytics: The :class:`AnalytiCord` this proxy is tied to.
+        :param analytics: The :class:`analyticord.AnalytiCord` this proxy is tied to.
         :param dpy_name: The discord.py name of the event.
         :param anal_name: The analyticord name of the event.
         """
@@ -132,7 +132,7 @@ class AnalytiCord:
     def register(self, dpy_name: str, anal_name: str):
         """Register an event.
 
-        Once registered, AnalytiCord.<anal_name> will return a :class:`EventProxy`
+        Once registered, AnalytiCord.<anal_name> will return a :class:`analyticord.EventProxy`
         for the given <anal_name>.
 
         This allows you to do:
