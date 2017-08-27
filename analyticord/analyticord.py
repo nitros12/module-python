@@ -28,7 +28,7 @@ def _make_error(error, **kwargs) -> errors.ApiError:
 
 
 class EventProxy:
-    def __init__(self, analytics: 'analyticord.AnalytiCord', dpy_name: str, anal_name: str):
+    def __init__(self, analytics, dpy_name: str, anal_name: str):
         """
         Proxy class to make events and actions acessible through dot notation
 
