@@ -28,16 +28,14 @@ def _make_error(error, **kwargs) -> errors.ApiError:
 
 
 class EventProxy:
-    def __init__(self, analytics, dpy_name: str, anal_name: str):
+    def __init__(self, analytics, anal_name: str):
         """
         Proxy class to make events and actions acessible through dot notation
 
         :param analytics: The :class:`analyticord.AnalytiCord` this proxy is tied to.
-        :param dpy_name: The discord.py name of the event.
         :param anal_name: The analyticord name of the event.
         """
         self.analytics = analytics
-        self.dpy_name = dpy_name
         self.anal_name = anal_name
         self.lock = asyncio.Lock()
         self.counter = 0
@@ -46,15 +44,16 @@ class EventProxy:
         """Invoke this events send message."""
         return self.analytics.send(self.anal_name, count)
 
-    def hook_bot(self, bot):
+    def hook_bot(self, dpy_name: str, bot):
         """Hook the event of a discord.py bot to this event.
 
+        :param dpy_name: Name of discord.py event.
         :param bot: An instance of a discord.py :class:`discord.ext.commands.Bot`.
         """
         async def _hook(*_, **__):
             await self.increment()
 
-        bot.add_listener(_hook, self.dpy_name)
+        bot.add_listener(_hook, dpy_name)
 
     async def increment(self):
         """Increment this events counter."""
@@ -82,7 +81,7 @@ class AnalytiCord:
     """
 
     #: Default listeners in format (discord event, analyticord event)
-    default_listens = (("on_message", "messages"),)
+    default_listens = ("messages", "guildJoin",)
 
     def __init__(self,
                  token: str,
@@ -111,10 +110,7 @@ class AnalytiCord:
         if user_token is not None:
             self.user_token = "user {}".format(user_token)
 
-        self.events = {}
-
-        for d, a in self.default_listens:
-            self.events[a] = EventProxy(self, d, a)
+        self.events = {i: EventProxy(self, i) for i in self.default_listens}
 
     def __getattr__(self, attr):
         return self.events[attr]
@@ -136,7 +132,7 @@ class AnalytiCord:
         for the given <anal_name>.
 
         This allows you to do:
-        await AnalytiCord.event.increment()  # increment the event counter
+        await AnalytiCord.event.increment()  # isend me inncrement the event counter
         AnalytiCord.event.hook_bot(bot)  # hook the event to a bot
 
         :param dpy_name: The discord.py event name, for example: on_message, on_guild_join.
