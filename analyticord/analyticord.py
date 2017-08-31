@@ -112,6 +112,8 @@ class AnalytiCord:
 
         self.events = {i: EventProxy(self, i) for i in self.default_listens}
 
+        self.updater = None  # placeholder for updater event
+
     def __getattr__(self, attr):
         return self.events[attr]
 
@@ -149,14 +151,19 @@ class AnalytiCord:
             return body
 
     async def start(self):
-        """Start up analyticord connection.
+        """Fire a login event.
         Also runs the event updater loop
 
         :raises: :class:`analyticord.errors.ApiError`.
         """
         resp = await self._do_request("get", login_address, self._auth)
-        self.loop.create_task(self._update_events_loop())
+        self.updater = self.loop.create_task(self._update_events_loop())
         return resp
+
+    async def stop(self):
+        """Update all events and stop the analyticord updater loop."""
+        self.updater.cancel()
+        await self._update_once()
 
     async def send(self, event_type: str, data: str) -> dict:
         """Send data to analiticord.
@@ -203,12 +210,15 @@ class AnalytiCord:
         """
         return await self._do_request("get", botlist_address, self._user_auth)
 
+    async def _update_once(self):
+        for event in self.events.values():
+            if event.counter:
+                try:
+                    await event.update_now()
+                except errors.ApiError as e:
+                    logger.error(str(e))
+
     async def _update_events_loop(self):
         while True:
             await asyncio.sleep(self.event_interval)
-            for event in self.events.values():
-                if event.counter:
-                    try:
-                        await event.update_now()
-                    except errors.ApiError as e:
-                        logger.error(str(e))
+            await self._update_once()
