@@ -127,7 +127,7 @@ class AnalytiCord:
             raise Exception("user_token must be set to use this feature.")
         return {"Authorization": self.user_token}
 
-    def register(self, dpy_name: str, anal_name: str):
+    def register(self, anal_name: str):
         """Register an event.
 
         Once registered, AnalytiCord.<anal_name> will return a :class:`analyticord.EventProxy`
@@ -137,10 +137,9 @@ class AnalytiCord:
         await AnalytiCord.event.increment()  # isend me inncrement the event counter
         AnalytiCord.event.hook_bot(bot)  # hook the event to a bot
 
-        :param dpy_name: The discord.py event name, for example: on_message, on_guild_join.
         :param anal_name: The AnalytiCord event name, for example: messages, guildJoin.
         """
-        self.events[anal_name] = EventProxy(self, dpy_name, anal_name)
+        self.events[anal_name] = EventProxy(self, anal_name)
 
     async def _do_request(self, rtype: str, endpoint: str, auth, **kwargs):
         req = getattr(self.session, rtype)
