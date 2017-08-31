@@ -81,7 +81,8 @@ class AnalytiCord:
     """
 
     #: Default listeners in format (discord event, analyticord event)
-    default_listens = ("messages", "guildJoin",)
+    default_listens = ("messages", "guildJoin", "error", "guildLeave", "disconnect",
+                       "voiceChannelJoin", "guildDetails", "mentions", "commands_used")
 
     def __init__(self,
                  token: str,
