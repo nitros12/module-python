@@ -158,7 +158,6 @@ class AnalytiCord:
 
     """
 
-    #: Default listeners in format (discord event, Proxy class)
     default_listens = (("messages", MessageEventProxy),
                        ("guildJoin", GuildJoinEventProxy),
                        ("error", ErrorEventProxy),
@@ -168,6 +167,9 @@ class AnalytiCord:
                        ("guildDetails", EventProxy),
                        ("mentions", EventProxy),
                        ("commands_used", CommandUsedEventProxy))
+    """: Default listeners in the format (Event name, Proxy class)
+    :class:`analyticord.AnalytiCord.event` will link to the relevent proxy class.
+    """
 
     def __init__(self,
                  token: str,
