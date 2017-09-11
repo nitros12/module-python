@@ -37,15 +37,35 @@ class EventProxy:
         """
         self.analytics = analytics
         self.anal_name = anal_name
+
+    def send(self, value: typing.Any):
+        """Invoke this events send message."""
+        return self.analytics.send(self.anal_name, value)
+
+    def hook_bot(self, bot, dpy_name: str):
+        """Hook a discord event to commiting the relevent action for this event.
+
+        :param dpy_name: name of discord.py event.
+        :param bot: an instance of a discord.py :class:`discord.ext.commands.bot`.
+        """
+        async def _hook(*_, **__):
+            await self.send(True)
+
+        bot.add_listener(_hook, dpy_name)
+
+
+class MessageEventProxy(EventProxy):
+    """Basically, only message event takes a delta value.
+    Everything else is exact, so half the stuff in EventProxy is useless for anything but `messages`
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.lock = asyncio.Lock()
         self.counter = 0
 
-    def send(self, count: int):
-        """Invoke this events send message."""
-        return self.analytics.send(self.anal_name, count)
-
-    def hook_bot(self, dpy_name: str, bot):
-        """Hook the event of a discord.py bot to this event.
+    def hook_bot(self, bot, dpy_name: str="on_message"):
+        """Hook a discord event to increment the message count.
 
         :param dpy_name: Name of discord.py event.
         :param bot: An instance of a discord.py :class:`discord.ext.commands.Bot`.
@@ -67,6 +87,64 @@ class EventProxy:
             self.counter = 0
             return resp
 
+    async def _update_once(self):
+        if self.counter:
+            try:
+                await self.update_now()
+            except errors.ApiError as e:
+                logger.error(str(e))
+
+    async def _update_events_loop(self):
+        while True:
+            await asyncio.sleep(self.event_interval)
+            await self._update_once()
+
+
+class ErrorEventProxy(EventProxy):
+    """Proxy class for the error event."""
+
+    def hook_bot(self, bot, dpy_name: str="on_command_error"):
+        """Hook a discord event to send an error event.
+
+        :param dpy_name: name of discord.py event.
+        :param bot: an instance of a discord.py :class:`discord.ext.commands.bot`.
+        """
+        async def _hook(ctx, exception):
+            await self.send("command: {}. error: {}.".format(ctx, exception))
+
+        bot.add_listener(_hook, dpy_name)
+
+
+class GuildJoinEventProxy(EventProxy):
+    """Proxy class for the guild join event."""
+
+    def hook_bot(self, bot, dpy_name: str="on_guild_join"):
+        """Hook a discord event to send a guildJoin event.
+
+        :param dpy_name: name of discord.py event.
+        :param bot: an instance of a discord.py :class:`discord.ext.commands.bot`.
+        """
+        async def _hook(*_, **__):
+            await self.send(len(bot.guilds))
+
+        bot.add_listener(_hook, dpy_name)
+
+
+class CommandUsedEventProxy(EventProxy):
+    """Proxy used for the command used event."""
+
+    def hook_bot(self, bot, dpy_name: str="on_command_completion"):
+        """Hook a discord event to send a commandUsed event.
+
+        :param dpy_name: name of discord.py event.
+        :param bot: an instance of a discord.py :class:`discord.ext.commands.bot`.
+        """
+
+        async def _hook(ctx):
+            await self.send(ctx.command.name)
+
+        bot.add_listener(_hook, dpy_name)
+
 
 class AnalytiCord:
     """Represents an AnalytiCord api object.
@@ -80,9 +158,16 @@ class AnalytiCord:
 
     """
 
-    #: Default listeners in format (discord event, analyticord event)
-    default_listens = ("messages", "guildJoin", "error", "guildLeave", "disconnect",
-                       "voiceChannelJoin", "guildDetails", "mentions", "commands_used")
+    #: Default listeners in format (discord event, Proxy class)
+    default_listens = (("messages", MessageEventProxy),
+                       ("guildJoin", GuildJoinEventProxy),
+                       ("error", ErrorEventProxy),
+                       ("guildLeave", EventProxy),
+                       ("disconnect", EventProxy),
+                       ("voiceChannelJoin", EventProxy),
+                       ("guildDetails", EventProxy),
+                       ("mentions", EventProxy),
+                       ("commands_used", CommandUsedEventProxy))
 
     def __init__(self,
                  token: str,
@@ -111,9 +196,7 @@ class AnalytiCord:
         if user_token is not None:
             self.user_token = "user {}".format(user_token)
 
-        self.events = {i: EventProxy(self, i) for i in self.default_listens}
-
-        self.updater = None  # placeholder for updater event
+        self.events = {i: e(self, i) for i, e in self.default_listens}
 
     def __getattr__(self, attr):
         return self.events[attr]
@@ -128,7 +211,7 @@ class AnalytiCord:
             raise Exception("user_token must be set to use this feature.")
         return {"Authorization": self.user_token}
 
-    def register(self, anal_name: str):
+    def register(self, anal_name: str, proxy_type: EventProxy=EventProxy):
         """Register an event.
 
         Once registered, AnalytiCord.<anal_name> will return a :class:`analyticord.EventProxy`
@@ -139,8 +222,9 @@ class AnalytiCord:
         AnalytiCord.event.hook_bot(bot)  # hook the event to a bot
 
         :param anal_name: The AnalytiCord event name, for example: messages, guildJoin.
+        :parap proxy_type: The event proxy to use. Should be a subclass of :class:`analyticord.EventProxy`.
         """
-        self.events[anal_name] = EventProxy(self, anal_name)
+        self.events[anal_name] = proxy_type(self, anal_name)
 
     async def _do_request(self, rtype: str, endpoint: str, auth, **kwargs):
         req = getattr(self.session, rtype)
@@ -157,13 +241,14 @@ class AnalytiCord:
         :raises: :class:`analyticord.errors.ApiError`.
         """
         resp = await self._do_request("get", login_address, self._auth)
-        self.updater = self.loop.create_task(self._update_events_loop())
+        self.updater = self.loop.create_task(
+            self.messages._update_events_loop())
         return resp
 
     async def stop(self):
         """Update all events and stop the analyticord updater loop."""
         self.updater.cancel()
-        await self._update_once()
+        await self.messages._update_once()
 
     async def send(self, event_type: str, data: str) -> dict:
         """Send data to analiticord.
@@ -209,16 +294,3 @@ class AnalytiCord:
         :raises: :class:`analyticord.errors.ApiError`.
         """
         return await self._do_request("get", botlist_address, self._user_auth)
-
-    async def _update_once(self):
-        for event in self.events.values():
-            if event.counter:
-                try:
-                    await event.update_now()
-                except errors.ApiError as e:
-                    logger.error(str(e))
-
-    async def _update_events_loop(self):
-        while True:
-            await asyncio.sleep(self.event_interval)
-            await self._update_once()
