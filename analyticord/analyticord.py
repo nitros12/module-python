@@ -32,7 +32,7 @@ class EventProxy:
         """
         Proxy class to make events and actions acessible through dot notation
 
-        :param analytics: The :class:`analyticord.AnalytiCord` this proxy is tied to.
+        :param analytics: The :class:`AnalytiCord` this proxy is tied to.
         :param anal_name: The analyticord name of the event.
         """
         self.analytics = analytics
@@ -162,6 +162,7 @@ class AnalytiCord:
     Default listeners:
     These are the mappings of events that are added to the AnalytiCord instance by default
     And the event proxies they map to.
+
     ================= ================================
     Event Name        Event Class
     ================= ================================
@@ -233,15 +234,15 @@ class AnalytiCord:
     def register(self, anal_name: str, proxy_type: EventProxy=EventProxy):
         """Register an event.
 
-        Once registered, AnalytiCord.<anal_name> will return a :class:`analyticord.EventProxy`
+        Once registered, AnalytiCord.<anal_name> will return a :class:`EventProxy`
         for the given <anal_name>.
 
         This allows you to do:
-        :class:`analyticord.AnalytiCord`.event.send(data)
-        :class:`analyticord.AnalytiCord`.event.hook_bot(bot)  # hook the event to a bot
+        :class:`AnalytiCord`.event.send(data)
+        :class:`AnalytiCord`.event.hook_bot(bot)  # hook the event to a bot
 
         :param anal_name: The AnalytiCord event name, for example: messages, guildJoin.
-        :param proxy_type: The event proxy to use. Should be a subclass of :class:`analyticord.EventProxy`.
+        :param proxy_type: The event proxy to use. Should be a subclass of :class:`EventProxy`.
         """
         self.events[anal_name] = proxy_type(self, anal_name)
 
