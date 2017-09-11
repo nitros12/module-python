@@ -149,27 +149,44 @@ class CommandUsedEventProxy(EventProxy):
 class AnalytiCord:
     """Represents an AnalytiCord api object.
 
-    Instantiation example:
+    Example:
 
     .. code-block:: python3
 
         analytics = AnalytiCord("token", "user_token")
         await analytics.start()
 
+        analytics.messages.hook_bot(bot)
+        analytics.guildLeave.hook_bot(bot)
+
+    Default listeners:
+    These are the mappings of events that are added to the AnalytiCord instance by default
+    And the event proxies they map to.
+    ================= ================================
+    Event Name        Event Class
+    ================= ================================
+    messages          :class:`MessageEventProxy`
+    guildJoin         :class:`GuildJoinEventProxy`
+    error             :class:`ErrorEventProxy`
+    guildLeave        :class:`EventProxy`
+    disconnect        :class:`EventProxy`
+    voiceChannelJoin  :class:`EventProxy`
+    guildDetails      :class:`EventProxy`
+    mentions          :class:`EventProxy`
+    commands_used     :class:`CommandUsedEventProxy`
+    ================= ================================
+
     """
 
-    default_listens = (("messages", MessageEventProxy),
-                       ("guildJoin", GuildJoinEventProxy),
-                       ("error", ErrorEventProxy),
-                       ("guildLeave", EventProxy),
-                       ("disconnect", EventProxy),
-                       ("voiceChannelJoin", EventProxy),
-                       ("guildDetails", EventProxy),
-                       ("mentions", EventProxy),
-                       ("commands_used", CommandUsedEventProxy))
-    """: Default listeners in the format (Event name, Proxy class)
-    :class:`analyticord.AnalytiCord.event` will link to the relevent proxy class.
-    """
+    _default_listens = (("messages", MessageEventProxy),
+                        ("guildJoin", GuildJoinEventProxy),
+                        ("error", ErrorEventProxy),
+                        ("guildLeave", EventProxy),
+                        ("disconnect", EventProxy),
+                        ("voiceChannelJoin", EventProxy),
+                        ("guildDetails", EventProxy),
+                        ("mentions", EventProxy),
+                        ("commands_used", CommandUsedEventProxy))
 
     def __init__(self,
                  token: str,
@@ -198,7 +215,7 @@ class AnalytiCord:
         if user_token is not None:
             self.user_token = "user {}".format(user_token)
 
-        self.events = {i: e(self, i) for i, e in self.default_listens}
+        self.events = {i: e(self, i) for i, e in self._default_listens}
 
     def __getattr__(self, attr):
         return self.events[attr]
@@ -220,11 +237,11 @@ class AnalytiCord:
         for the given <anal_name>.
 
         This allows you to do:
-        await AnalytiCord.event.increment()  # isend me inncrement the event counter
-        AnalytiCord.event.hook_bot(bot)  # hook the event to a bot
+        :class:`analyticord.AnalytiCord`.event.send(data)
+        :class:`analyticord.AnalytiCord`.event.hook_bot(bot)  # hook the event to a bot
 
         :param anal_name: The AnalytiCord event name, for example: messages, guildJoin.
-        :parap proxy_type: The event proxy to use. Should be a subclass of :class:`analyticord.EventProxy`.
+        :param proxy_type: The event proxy to use. Should be a subclass of :class:`analyticord.EventProxy`.
         """
         self.events[anal_name] = proxy_type(self, anal_name)
 
@@ -257,9 +274,7 @@ class AnalytiCord:
 
         :param event_type: Event type to send.
         :param data: Data to send.
-
         :return: Dict response from api.
-
         :raises: :class:`analyticord.errors.ApiError`.
         """
         return await self._do_request("post", send_address, self._auth,
@@ -269,9 +284,7 @@ class AnalytiCord:
         """Get data from the api.
 
         :param attrs: Kwarg attributes passed to get request params.
-
         :return: Response list on success.
-
         :raises:  :class:`analyticord.errors.ApiError`.
         """
         return await self._do_request("get", get_address, self._user_auth, params=attrs)
@@ -280,9 +293,7 @@ class AnalytiCord:
         """Get info for a bot id.
 
         :param id: The ID of the bot to get info for.
-
         :return: Bot info data.
-
         :raises: :class:`analyticord.errors.ApiError`.
         """
         return await self._do_request("get", botinfo_address, self._user_auth,
@@ -292,7 +303,6 @@ class AnalytiCord:
         """Get list of bots owned by this auth.
 
         :return: list of bot info data.
-
         :raises: :class:`analyticord.errors.ApiError`.
         """
         return await self._do_request("get", botlist_address, self._user_auth)
