@@ -9,7 +9,7 @@
 **Table of Contents**
 
 * [Installation](#installation)
-* [Getting Started](#getting started)
+* [Getting Started](#getting-started)
 * [License](#license)
 
 ## Installation
