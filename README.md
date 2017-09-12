@@ -1,42 +1,47 @@
-# Analyticord-source/module-python/beta
-https://analyticord.solutions/api/version?lib=python
+# analyticord
 
-Documentation is available [here](https://discordanalytics-python.readthedocs.io/en/latest/)
+[![Supported Python versions](https://img.shields.io/pypi/pyversions/analyticord.svg)](https://pypi.org/project/analyticord)
+[![License](https://img.shields.io/pypi/l/analyticord.svg)](https://choosealicense.com/licenses)
+[![Documentation Status](https://readthedocs.org/projects/discordanalytics-python/badge/?version=latest)](http://discordanalytics-python.readthedocs.io/en/latest/?badge=latest)
 
-## Getting started
-To download analyticord python, install this repo via pip: `pip install -U git+https://github.com/analyticord/module-python`
+-----
 
-Then use
+**Table of Contents**
+
+* [Installation](#installation)
+* [Getting Started](#getting-started)
+* [License](#license)
+
+## Installation
+
+analyticord is distributed on [PyPI](https://pypi.org) as a universal
+wheel and is available on Linux/macOS and Windows and supports
+Python 3.5+ and PyPy.
+
+```bash
+$ pip install analyticord
+```
+
+## Getting Started
 ```python
-import analyticord
+import asyncio
+from analyticord import AnalytiCord
+
+loop = asyncio.get_event_loop()
+
+# The most basic usage, with a single bot token
+analytics = AnalytiCord("token")
+
+# start up the analytics
+# this could be done inside the on_ready event, etc of a d.py bot
+loop.run_until_complete(analytics.start())
+
+# hook the on_message event of a d.py bot
+# this will send message count events to analyticord for you
+analytics.messages.hook_bot(bot)
 ```
 
-To create the analyticord instance, simply call the constructor of `analyticord.AnalytiCord` like so:
-```python
-analytics = analyticord.AnalytiCord(token)  # where token is your analyticord token
-```
+## License
 
-Then start it up with:
-```python
-await analytics.start()
-```
-
-To increment the message count, use:
-```python
-await analytics.messages.increment()
-```
-
-If you are using discord.py, you can also use `analytics.messages.hook_bot(bot)` to hook the relevant events of the bot. This does not affect events already registered with the bot, for example registering messages will not break any current on_message events -- it does not overwrite registered events.
-
-## Sending data to Analyticord
-
-To send data like guildJoin, use `AnalytiCord.send`. For example:
-```
-await analytics.send('guildJoin', 'verified')
-```
-This will add a number to the amount of guilds and growth on the Analyticord frontend.
-
-Every minute, the amount of messsages since the last submission will be sent. Please **do not send the amount of messages yourself as soon as you recieve them**; you will be ratelimited and banned. Let the library handle it for you.
-
-## Events
-You can see a list of event types at https://anlyti.co/eventTypes.
+analyticord is distributed under the terms of the
+[MIT License](https://choosealicense.com/licenses/mit).
