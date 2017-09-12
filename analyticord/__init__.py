@@ -1,4 +1,4 @@
-from .analyticord import AnalytiCord, EventProxy
+from .analyticord import *
 from .errors import *
 
-__version__ = "0.1.71"
+__version__ = '0.1.7'
