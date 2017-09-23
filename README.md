@@ -3,6 +3,7 @@
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/analyticord.svg)](https://pypi.org/project/analyticord)
 [![License](https://img.shields.io/pypi/l/analyticord.svg)](https://choosealicense.com/licenses)
 [![Documentation Status](https://readthedocs.org/projects/discordanalytics-python/badge/?version=latest)](http://discordanalytics-python.readthedocs.io/en/latest/?badge=latest)
+[![Build Status](https://travis-ci.org/nitros12/module-python.svg?branch=master)](https://travis-ci.org/nitros12/module-python)
 
 -----
 
