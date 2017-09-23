@@ -1,18 +1,20 @@
 import asyncio
-import aiohttp
 import logging
 import typing
 
+import aiohttp
 from analyticord import errors
 
 logger = logging.getLogger("analyticord")
 
-base_address = "https://analyticord.solutions"
-login_address = base_address + "/api/botLogin"
-send_address = base_address + "/api/submit"
-get_address = base_address + "/api/getData"
-botinfo_address = base_address + "/api/botinfo"
-botlist_address = base_address + "/api/botlist"
+
+def route(*ends) -> str:
+    """Formats into a route.
+
+    route("api", "botLogin") -> "https://analyticord.solutions/api/botLogin
+    """
+    s = "https://analyticord.solutions"
+    return "/".join((s, *ends))
 
 
 def _make_error(error, **kwargs) -> errors.ApiError:
@@ -48,6 +50,7 @@ class EventProxy:
         :param dpy_name: name of discord.py event.
         :param bot: an instance of a discord.py :class:`discord.ext.commands.bot`.
         """
+
         async def _hook(*_, **__):
             await self.send(True)
 
@@ -70,6 +73,7 @@ class MessageEventProxy(EventProxy):
         :param dpy_name: Name of discord.py event.
         :param bot: An instance of a discord.py :class:`discord.ext.commands.Bot`.
         """
+
         async def _hook(*_, **__):
             await self.increment()
 
@@ -109,6 +113,7 @@ class ErrorEventProxy(EventProxy):
         :param dpy_name: name of discord.py event.
         :param bot: an instance of a discord.py :class:`discord.ext.commands.bot`.
         """
+
         async def _hook(ctx, exception):
             await self.send("command: {}. error: {}.".format(ctx, exception))
 
@@ -124,6 +129,7 @@ class GuildJoinEventProxy(EventProxy):
         :param dpy_name: name of discord.py event.
         :param bot: an instance of a discord.py :class:`discord.ext.commands.bot`.
         """
+
         async def _hook(*_, **__):
             await self.send(len(bot.guilds))
 
@@ -179,15 +185,15 @@ class AnalytiCord:
 
     """
 
-    _default_listens = (("messages", MessageEventProxy),
-                        ("guildJoin", GuildJoinEventProxy),
-                        ("error", ErrorEventProxy),
-                        ("guildLeave", EventProxy),
-                        ("disconnect", EventProxy),
-                        ("voiceChannelJoin", EventProxy),
-                        ("guildDetails", EventProxy),
-                        ("mentions", EventProxy),
-                        ("commands_used", CommandUsedEventProxy))
+    _default_listens = (("messages", MessageEventProxy), ("guildJoin",
+                                                          GuildJoinEventProxy),
+                        ("error", ErrorEventProxy), ("guildLeave", EventProxy),
+                        ("disconnect", EventProxy), ("voiceChannelJoin",
+                                                     EventProxy),
+                        ("guildDetails",
+                         EventProxy), ("mentions",
+                                       EventProxy), ("commands_used",
+                                                     CommandUsedEventProxy))
 
     def __init__(self,
                  token: str,
@@ -218,6 +224,8 @@ class AnalytiCord:
 
         self.events = {i: e(self, i) for i, e in self._default_listens}
 
+        self.updater = None
+
     def __getattr__(self, attr):
         return self.events[attr]
 
@@ -247,8 +255,7 @@ class AnalytiCord:
         self.events[anal_name] = proxy_type(self, anal_name)
 
     async def _do_request(self, rtype: str, endpoint: str, auth, **kwargs):
-        req = getattr(self.session, rtype)
-        async with req(endpoint, headers=auth, **kwargs) as resp:
+        async with self.session.request(rtype, endpoint, headers=auth, **kwargs) as resp:
             body = await resp.json()
             if resp.status != 200:
                 raise _make_error(body, status=resp.status)
@@ -260,15 +267,15 @@ class AnalytiCord:
 
         :raises: :class:`analyticord.errors.ApiError`.
         """
-        resp = await self._do_request("get", login_address, self._auth)
+        resp = await self._do_request("get", route("api", "botLogin"), self._auth)
         self.updater = self.loop.create_task(
-            self.messages._update_events_loop())
+            self.messages.update_events_loop())
         return resp
 
     async def stop(self):
         """Update all events and stop the analyticord updater loop."""
         self.updater.cancel()
-        await self.messages._update_once()
+        await self.messages.update_once()
 
     async def send(self, event_type: str, data: str) -> dict:
         """Send data to analiticord.
@@ -278,8 +285,11 @@ class AnalytiCord:
         :return: Dict response from api.
         :raises: :class:`analyticord.errors.ApiError`.
         """
-        return await self._do_request("post", send_address, self._auth,
-                                      data=dict(eventType=event_type, data=data))
+        return await self._do_request(
+            "post",
+            route("api", "submit"),
+            self._auth,
+            data=dict(eventType=event_type, data=data))
 
     async def get(self, **attrs) -> list:
         """Get data from the api.
@@ -288,7 +298,8 @@ class AnalytiCord:
         :return: Response list on success.
         :raises:  :class:`analyticord.errors.ApiError`.
         """
-        return await self._do_request("get", get_address, self._user_auth, params=attrs)
+        return await self._do_request(
+            "get", route("api", "getData"), self._user_auth, params=attrs)
 
     async def bot_info(self, id: int) -> dict:
         """Get info for a bot id.
@@ -297,8 +308,8 @@ class AnalytiCord:
         :return: Bot info data.
         :raises: :class:`analyticord.errors.ApiError`.
         """
-        return await self._do_request("get", botinfo_address, self._user_auth,
-                                      params={"id": id})
+        return await self._do_request(
+            "get", route("api", "botinfo"), self._user_auth, params={"id": id})
 
     async def bot_list(self) -> list:
         """Get list of bots owned by this auth.
@@ -306,4 +317,4 @@ class AnalytiCord:
         :return: list of bot info data.
         :raises: :class:`analyticord.errors.ApiError`.
         """
-        return await self._do_request("get", botlist_address, self._user_auth)
+        return await self._do_request("get", route("api", "botlist"), self._user_auth)
