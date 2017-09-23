@@ -3,6 +3,7 @@ import logging
 import typing
 
 import aiohttp
+
 from analyticord import errors
 
 logger = logging.getLogger("analyticord")
@@ -269,13 +270,13 @@ class AnalytiCord:
         """
         resp = await self._do_request("get", route("api", "botLogin"), self._auth)
         self.updater = self.loop.create_task(
-            self.messages.update_events_loop())
+            self.messages._update_events_loop())
         return resp
 
     async def stop(self):
         """Update all events and stop the analyticord updater loop."""
         self.updater.cancel()
-        await self.messages.update_once()
+        await self.messages._update_once()
 
     async def send(self, event_type: str, data: str) -> dict:
         """Send data to analiticord.
