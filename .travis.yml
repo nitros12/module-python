@@ -15,3 +15,7 @@ install:
   - pip install tox
 
 script: tox
+
+env:
+  - ANALYTICORD_BOT: KtP2dryxmSVLPb07v6beav9wdS43vRvEBpMeR29E8VrOHuDMIWtGc8SXiaKCR0cVosWsbGzgncabIwPakEuZHt0R2l4bZcjkWkenjvfnQu0qmXsyf4gNfWaulK0vjUVt
+  - ANALYTICORD_USER: adflkhjgadlkfjgadlkfjgalkdjtlknqaemadflkgjrglslk420BLAZINlolmemes
