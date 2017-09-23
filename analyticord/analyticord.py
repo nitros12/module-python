@@ -186,15 +186,15 @@ class AnalytiCord:
 
     """
 
-    _default_listens = (("messages", MessageEventProxy), ("guildJoin",
-                                                          GuildJoinEventProxy),
-                        ("error", ErrorEventProxy), ("guildLeave", EventProxy),
-                        ("disconnect", EventProxy), ("voiceChannelJoin",
-                                                     EventProxy),
-                        ("guildDetails",
-                         EventProxy), ("mentions",
-                                       EventProxy), ("commands_used",
-                                                     CommandUsedEventProxy))
+    _default_listens = (("messages", MessageEventProxy),
+                        ("guildJoin", GuildJoinEventProxy),
+                        ("error", ErrorEventProxy),
+                        ("guildLeave", EventProxy),
+                        ("disconnect", EventProxy),
+                        ("voiceChannelJoin", EventProxy),
+                        ("guildDetails", EventProxy),
+                        ("mentions", EventProxy),
+                        ("commands_used", CommandUsedEventProxy))
 
     def __init__(self,
                  token: str,
