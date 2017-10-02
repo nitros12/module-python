@@ -41,6 +41,9 @@ class EventProxy:
         self.analytics = analytics
         self.anal_name = anal_name
 
+    def __str__(self):
+        return "Analyticord event: {}".format(self.__class__.__name__)
+
     def send(self, value: typing.Any):
         """Invoke this events send message."""
         return self.analytics.send(self.anal_name, value)
@@ -68,6 +71,9 @@ class MessageEventProxy(EventProxy):
         self.lock = asyncio.Lock()
         self.counter = 0
 
+    def __str__(self):
+        return "{}, counting {} messages".format(super().__str__(), self.counter)
+
     def hook_bot(self, bot, dpy_name: str="on_message"):
         """Hook a discord event to increment the message count.
 
@@ -86,7 +92,7 @@ class MessageEventProxy(EventProxy):
             self.counter += 1
 
     async def update_now(self):
-        "Trigger an update of this event, resetting the counter."
+        """Trigger an update of this event, resetting the counter."""
         async with self.lock:
             resp = await self.send(self.counter)
             self.counter = 0
@@ -101,7 +107,7 @@ class MessageEventProxy(EventProxy):
 
     async def _update_events_loop(self):
         while True:
-            await asyncio.sleep(self.event_interval)
+            await asyncio.sleep(self.analytics.event_interval)
             await self._update_once()
 
 
@@ -214,6 +220,9 @@ class AnalytiCord:
         #: Your AnalytiCord bot token.
         self.token = "bot {}".format(token)
 
+        #: Number of events sent
+        self.sent_events = 0
+
         self.loop = loop or asyncio.get_event_loop()
         self.session = session or aiohttp.ClientSession()
 
@@ -229,6 +238,9 @@ class AnalytiCord:
 
     def __getattr__(self, attr):
         return self.events[attr]
+
+    def __str__(self):
+        return "Analyticord instance. Fired {} events".format(self.sent_events)
 
     @property
     def _auth(self):
@@ -256,7 +268,8 @@ class AnalytiCord:
         self.events[anal_name] = proxy_type(self, anal_name)
 
     async def _do_request(self, rtype: str, endpoint: str, auth, **kwargs):
-        async with self.session.request(rtype, endpoint, headers=auth, **kwargs) as resp:
+        async with self.session.request(
+                rtype, endpoint, headers=auth, **kwargs) as resp:
             body = await resp.json()
             if resp.status != 200:
                 raise _make_error(body, status=resp.status)
@@ -268,9 +281,11 @@ class AnalytiCord:
 
         :raises: :class:`analyticord.errors.ApiError`.
         """
-        resp = await self._do_request("get", route("api", "botLogin"), self._auth)
+        resp = await self._do_request("get",
+                                      route("api", "botLogin"), self._auth)
         self.updater = self.loop.create_task(
             self.messages._update_events_loop())
+        self.sent_events = 0
         return resp
 
     async def stop(self):
@@ -279,13 +294,14 @@ class AnalytiCord:
         await self.messages._update_once()
 
     async def send(self, event_type: str, data: str) -> dict:
-        """Send data to analiticord.
+        """Send data to analyticord.
 
         :param event_type: Event type to send.
         :param data: Data to send.
         :return: Dict response from api.
         :raises: :class:`analyticord.errors.ApiError`.
         """
+        self.sent_events += 1
         return await self._do_request(
             "post",
             route("api", "submit"),
@@ -318,4 +334,5 @@ class AnalytiCord:
         :return: list of bot info data.
         :raises: :class:`analyticord.errors.ApiError`.
         """
-        return await self._do_request("get", route("api", "botlist"), self._user_auth)
+        return await self._do_request("get",
+                                      route("api", "botlist"), self._user_auth)
